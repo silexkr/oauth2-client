@@ -12,7 +12,26 @@ my $client = OAuth2::Client->new(
 
 ok($client, 'Create an instance');
 
-my ($is_success, $data);
-($is_success, $data) = $client->token('ROPC', username => 'aanoaa', password => '123456');
-($is_success, $data) = $client->token('RT');
+my ($is_success, $data, $location);
+($is_success, $data, $location) =
+  $client->authorize(
+      'code',
+      redirect_uri => 'http://restore.e-crf.co.kr:5001/',
+      state        => 'xyz'
+  );
+
+($is_success, $data) =
+  $client->token(
+      'AC',
+      code         => $data->{code},
+      redirect_uri => $location
+  );
+
+($is_success, $data) =
+  $client->token(
+      'ROPC',
+      username => 'aanoaa',
+      password => '123456'
+  );
+
 done_testing();
