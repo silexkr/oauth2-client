@@ -8,23 +8,18 @@ use URI;
 
 with 'OAuth2::Traits::Client';
 
-### AC  : AuthorizationCode
-### IMP : Implicit
-### ROPC: ResourceOwnerPasswordCredentials
-### CC  : ClientCredentials
-### RT  : RefreshToken
-our @GRANT_TYPES    = qw/AC IMP ROPC CC RT/;
+our @GRANT_TYPES = (
+    'Authorization Code',
+    'Implicit',
+    'Resource Owner Password Credentials',
+    'Client Credentials',
+    'Refresh Token'
+);
 our @RESPONSE_TYPES = qw/code token/;
 
 has [qw/client_id client_secret authorization_endpoint token_endpoint/] => (
     is  => 'ro',
     isa => 'Str'
-);
-
-has 'accept' => (
-    is      => 'ro',
-    isa     => 'Str',
-    default => '',
 );
 
 has [qw/access_token token_type refresh_token scope/] => (
@@ -38,15 +33,16 @@ has 'expires_in' => (
     isa => 'DateTime'
 );
 
-sub authorize {
-    my ($self, $response_type, %args) = @_;
+sub authorization_request {
+    my ($self, %args) = @_;
+
+    my $response_type = $args{response_type};
 
     die "Unknown Reponse-Type"
       unless grep { $response_type eq $_ } @RESPONSE_TYPES;
 
     my ($req, $res, $data, %query_params);
     $req = HTTP::Request->new(GET => $self->authorization_endpoint);
-    $req->header(Accept => $self->accept) if $self->accept;
 
     ## TODO: consider `token` response type
 
@@ -60,38 +56,24 @@ sub authorize {
     $query_params{state}        = $args{state} if $args{state};
 
     $req->uri->query_form(%query_params);
-    $res = $self->ua->request($req);
-
-    my $location = $res->header('Location');
-    die "Missing Location" unless $location;
-
-    ### TODO: validate $location
-    ###   http://tools.ietf.org/html/rfc6749#section-4.1.2
-    my $redirect_uri = URI->new($location);
-    my $is_success = 1; $data = {};
-    for my $key ($redirect_uri->query_param) {
-        $data->{$key} = $redirect_uri->query_param($key);
-        $is_success = 0 if $key eq 'error';
-    }
-
-    # which is better? $location(string) or $redirect_uri(URI object)?
-    return ($is_success, $data, $location);
+    return $req;
 }
 
-sub token {
-    my ($self, $grant_type, %args) = @_;
+sub token_request {
+    my ($self, %args) = @_;
+
+    my $grant_type = $args{grant_type};
 
     die "Unknown Grant-Type"
       unless grep { $grant_type eq $_ } @GRANT_TYPES;
 
     my ($req, $res, $data, %query_params);
-    $req = HTTP::Request->new(GET => $self->token_endpoint);
-    $req->header(Accept => $self->accept) if $self->accept;
+    $req = HTTP::Request->new(POST => $self->token_endpoint);
 
     my $credentials = $self->basic_credentials($self->client_id, $self->client_secret);
     $req->header(Authorization => $credentials);
 
-    if ($grant_type eq 'AC') {
+    if ($grant_type eq 'Authorization Code') {
         ## GRANT_TYPE, CODE, REDIRECT_URI, CLIENT_ID
         ## using Authorization header for Client Credentials instead
         ## of CLIENT_ID
@@ -113,21 +95,20 @@ sub token {
             grant_type   => 'authorization_code',
             redirect_uri => $args{redirect_uri},
         );
-    } elsif ($grant_type eq 'IMP') {
-    } elsif ($grant_type eq 'ROPC') {
+    } elsif ($grant_type eq 'Implicit') {
+    } elsif ($grant_type eq 'Resource Owner Password Credentials') {
         # GRANT_TYPE, USERNAME, PASSWORD, scope
-        my $grant_type_option = $self->grant_type_option;
         %query_params = (
             grant_type => 'password',
-            username   => $grant_type_option->{username},
-            password   => $grant_type_option->{password},
+            username   => $args{username},
+            password   => $args{password},
         );
         $query_params{scope} = $args{scope} if $args{scope};
-    } elsif ($grant_type eq 'CC') {
+    } elsif ($grant_type eq 'Client Credentials') {
         # GRANT_TYPE, scope
         $query_params{grant_type} = 'client_credentials';
         $query_params{scope} = $args{scope} if $args{scope};
-    } elsif ($grant_type eq 'RT') {
+    } elsif ($grant_type eq 'Refresh Token') {
         # GRANT_TYPE, REFRESH_TOKEN, scope
 
         die "refresh_token is required" unless $self->refresh_token;
@@ -142,23 +123,28 @@ sub token {
     }
 
     $req->uri->query_form(%query_params);
-    $res = $self->ua->request($req);
+    return $req;
+}
 
-    my $content_type = $res->header('Content-Type');
-    if ($content_type ne 'application/json' && $content_type ne 'application/x-www-form-urlencoded') {
-        die "Not Supported Content-Type";
-    }
+sub token {
+    my ($self, $req) = @_;
 
-    if ($content_type eq 'application/json') {
-        $data = decode_json($res->content);
-    } else {
-        my $content = $res->decoded_content;
-        my @params = split('&', $content);
-        for my $param (@params) {
-            my ($key, $value) = split /=/, $param;
-            $data->{$key} = $value;
-        }
-    }
+    my $grant_type = $req->uri->query_param('grant_type');
+
+    return if $grant_type ne 'client_credentials' && $grant_type ne 'password';
+
+    $req->header('Accept',       'application/json');
+    $req->header('Content-Type', 'application/x-www-form-urlencoded');
+
+    ## query_params in URI is also fine.
+    $req->content($req->uri->query);
+    $req->uri->query_form({});
+
+    my $res = $self->ua->request($req);
+
+    die "Unsupported Content-Type" if $res->header('Content-Type') ne 'application/json';
+
+    my $data = decode_json($res->content);
 
     if ($res->is_success) {
         ### TODO: validate successful response
@@ -175,11 +161,48 @@ sub token {
         }
     }
 
-    return ($res->is_success, $data);
+    return $self->access_token;
 }
-
-sub _refresh_token { shift->token('RT') }
 
 __PACKAGE__->meta->make_immutable;
 
 1;
+
+=pod
+
+=encoding utf-8
+
+=head1 NAME
+
+=haed1 SYNOPSIS
+
+    use OAuth2::Client;
+    my $client = OAuth2::Client->new(
+        client_id              => '5c4b5f41-f0f2-4fdd-aa7a-b161b4ee04d7',
+        client_secret          => 'q76UgVkXi1VE50Ettc1TY2kMpgoJmqzWmCmy',
+        authorization_endpoint => 'http://auth.silex.kr:5000/oauth/authorize',
+        token_endpoint         => 'http://auth.silex.kr:5000/oauth/token',
+    );
+
+    my $req;    # $req is an HTTP::Request object
+    $req = $client->authorization_request(
+        response_type => 'code',
+        redirect_uri  => 'http://restore.e-crf.co.kr:5001/',
+        state         => 'xyz'
+    );
+
+    $req = $client->token_request(
+        grant_type   => 'Authorization Code',
+        code         => 'aXW2c6bYz',
+        redirect_uri => 'http://restore.e-crf.co.kr:5001/'
+    );
+
+    $req = $client->token_request(
+        grant_type => 'Resource Owner Password Credentials',
+        username   => 'aanoaa',
+        password   => '123456'
+    );
+
+    $token = $client->token($req);    # cause, password grant_type
+
+=cut

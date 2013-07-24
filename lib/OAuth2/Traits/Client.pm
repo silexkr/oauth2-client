@@ -6,7 +6,7 @@ use JSON::XS;
 use LWP::UserAgent;
 use MIME::Base64 'encode_base64';
 
-requires qw/authorize token/;
+requires qw/authorization_request token_request token/;
 
 has 'ua' => (
     is  => 'ro',
