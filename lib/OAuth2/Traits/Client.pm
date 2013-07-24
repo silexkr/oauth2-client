@@ -13,8 +13,9 @@ has 'ua' => (
     isa => 'LWP::UserAgent',
     default => sub {
         my $ua = LWP::UserAgent->new(
-            agent => 'OAuth2::Client',
-            cookie_jar => HTTP::Cookies->new
+            agent        => 'OAuth2::Client',
+            cookie_jar   => HTTP::Cookies->new,
+            max_redirect => 0,
         );
 
         $ua->add_handler(
