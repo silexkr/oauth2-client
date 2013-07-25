@@ -28,7 +28,7 @@ has [qw/access_token token_type refresh_token scope/] => (
     default => '',
 );
 
-has 'expires_in' => (
+has 'expires' => (
     is  => 'rw',
     isa => 'DateTime'
 );
@@ -67,6 +67,10 @@ sub token_request {
     die "Unknown Grant-Type"
       unless grep { $grant_type eq $_ } @GRANT_TYPES;
 
+    if ($grant_type ne 'Refresh Token' && $self->expires->epoch < DateTime->now->epoch) {
+        die "Failed to refresh-token" unless $self->_refresh_token();
+    }
+
     my ($req, $res, $data, %query_params);
     $req = HTTP::Request->new(POST => $self->token_endpoint);
 
@@ -75,18 +79,6 @@ sub token_request {
 
     if ($grant_type eq 'Authorization Code') {
         ## GRANT_TYPE, CODE, REDIRECT_URI, CLIENT_ID
-        ## using Authorization header for Client Credentials instead
-        ## of CLIENT_ID
-
-        ### TODO: authorize 에서 redirect_uri 는 optional 이기 때문에
-        ### redirect_uri 가 항상 넘어올 순 없다. 허놔, spec 의 응답을
-        ### 보면 302 밖에 없다.
-
-        ### http://tools.ietf.org/html/rfc6749#section-4.1.3
-        ### redirect_uri
-        ###   REQUIRED, if the "redirect_uri" parameter was included
-        ###   in the authorization request as described in Section
-        ###   4.1.1, and their values MUST be identical.
 
         die "Invalid Argument" unless $args{code} && $args{redirect_uri};
 
@@ -141,6 +133,12 @@ sub token {
     $req->uri->query_form({});
 
     my $res = $self->ua->request($req);
+    $self->parse_response($res);
+    return $self->access_token;
+}
+
+sub parse_response {
+    my ($self, $res) = @_;
 
     die "Unsupported Content-Type" if $res->header('Content-Type') ne 'application/json';
 
@@ -157,11 +155,20 @@ sub token {
         if (my $expires_in = $data->{expires_in}) {
             my $epoch = DateTime->now->epoch;
             my $dt    = DateTime->from_epoch(epoch => $epoch + $expires_in);
-            $self->expires_in($dt);
+            $self->expires($dt);
         }
     }
 
-    return $self->access_token;
+    return $data;
+}
+
+sub _refresh_token {
+    my $self = shift;
+
+    my $req = $self->token_request(grant_type => 'refresh_token');
+    my $res = $self->ua->request($req);
+    $self->parse_response($res);
+    return $res->is_success;
 }
 
 __PACKAGE__->meta->make_immutable;
