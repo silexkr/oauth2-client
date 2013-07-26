@@ -67,7 +67,9 @@ sub token_request {
     die "Unknown Grant-Type"
       unless grep { $grant_type eq $_ } @GRANT_TYPES;
 
-    if ($grant_type ne 'Refresh Token' && $self->expires->epoch < DateTime->now->epoch) {
+    if ($grant_type ne 'Refresh Token'
+          and defined $self->expires
+          and $self->expires->epoch < DateTime->now->epoch) {
         die "Failed to refresh-token" unless $self->_refresh_token();
     }
 
