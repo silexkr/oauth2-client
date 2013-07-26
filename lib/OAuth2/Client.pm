@@ -3,6 +3,7 @@ package OAuth2::Client;
 use Moose;
 use DateTime;
 use HTTP::Request;
+use JSON::XS;
 use URI::QueryParam;
 use URI;
 
@@ -105,11 +106,11 @@ sub token_request {
     } elsif ($grant_type eq 'Refresh Token') {
         # GRANT_TYPE, REFRESH_TOKEN, scope
 
-        die "refresh_token is required" unless $self->refresh_token;
+        die "refresh_token is required" unless $args{refresh_token};
 
         %query_params = (
             grant_type    => 'refresh_token',
-            refresh_token => $self->refresh_token,
+            refresh_token => $args{refresh_token},
         );
         $query_params{scope} = $args{scope} if $args{scope};
     } else {
@@ -165,9 +166,12 @@ sub parse_response {
 }
 
 sub _refresh_token {
-    my $self = shift;
+    my ($self, $refresh_token) = @_;
 
-    my $req = $self->token_request(grant_type => 'refresh_token');
+    my $req = $self->token_request(
+        grant_type    => 'Refresh Token',
+        refresh_token => $refresh_token || $self->refresh_token
+    );
     my $res = $self->ua->request($req);
     $self->parse_response($res);
     return $res->is_success;
