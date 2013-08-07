@@ -18,7 +18,7 @@ $req = $client->authorization_request(
     state         => 'xyz'
 );
 
-diag($req->as_string);
+# diag($req->as_string);
 
 $req = $client->token_request(
     grant_type   => 'Authorization Code',
@@ -32,8 +32,5 @@ $req = $client->token_request(
     password   => '123456'
 );
 
-diag($req->as_string);
-
-$token = $client->token($req);
-
+# diag($req->as_string);
 done_testing();
