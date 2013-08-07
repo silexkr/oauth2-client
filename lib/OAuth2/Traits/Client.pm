@@ -6,15 +6,16 @@ use JSON::XS;
 use LWP::UserAgent;
 use MIME::Base64 'encode_base64';
 
-requires qw/authorize token/;
+requires qw/authorization_request token_request token/;
 
 has 'ua' => (
     is  => 'ro',
     isa => 'LWP::UserAgent',
     default => sub {
         my $ua = LWP::UserAgent->new(
-            agent => 'OAuth2::Client',
-            cookie_jar => HTTP::Cookies->new
+            agent        => 'OAuth2::Client',
+            cookie_jar   => HTTP::Cookies->new,
+            max_redirect => 0,
         );
 
         $ua->add_handler(

@@ -3,126 +3,219 @@ package OAuth2::Client;
 use Moose;
 use DateTime;
 use HTTP::Request;
+use JSON::XS;
+use URI::QueryParam;
+use URI;
 
 with 'OAuth2::Traits::Client';
+
+our @GRANT_TYPES = (
+    'Authorization Code',
+    'Implicit',
+    'Resource Owner Password Credentials',
+    'Client Credentials',
+    'Refresh Token'
+);
+our @RESPONSE_TYPES = qw/code token/;
 
 has [qw/client_id client_secret authorization_endpoint token_endpoint/] => (
     is  => 'ro',
     isa => 'Str'
 );
 
-has 'accept' => (
-    is      => 'ro',
-    isa     => 'Str',
-    default => '',
-);
-
-has [qw/_access_token _token_type _refresh_token _scope/] => (
+has [qw/access_token token_type refresh_token scope/] => (
     is      => 'rw',
     isa     => 'Str',
     default => '',
 );
 
-has '_expires_in' => (
+has 'expires' => (
     is  => 'rw',
     isa => 'DateTime'
 );
 
-sub token {
-    my ($self, $grant_type, %args) = @_;
+sub authorization_request {
+    my ($self, %args) = @_;
 
-    ### AC  : AuthorizationCode
-    ### IM  : Implicit
-    ### ROPC: ResourceOwnerPasswordCredentials
-    ### CC  : ClientCredentials
-    ### RT  : RefreshToken
+    my $response_type = $args{response_type};
+
+    die "Unknown Reponse-Type"
+      unless grep { $response_type eq $_ } @RESPONSE_TYPES;
+
+    my ($req, $res, $data, %query_params);
+    $req = HTTP::Request->new(GET => $self->authorization_endpoint);
+
+    ## TODO: consider `token` response type
+
+    %query_params = (
+        response_type => $response_type,
+        client_id     => $self->client_id,
+    );
+
+    $query_params{redirect_uri} = $args{redirect_uri} if $args{redirect_uri};
+    $query_params{scope}        = $args{scope} if $args{scope};
+    $query_params{state}        = $args{state} if $args{state};
+
+    $req->uri->query_form(%query_params);
+    return $req;
+}
+
+sub token_request {
+    my ($self, %args) = @_;
+
+    my $grant_type = $args{grant_type};
+
     die "Unknown Grant-Type"
-        unless grep { $grant_type eq $_ } qw/AC IMP ROPC CC RT/;
+      unless grep { $grant_type eq $_ } @GRANT_TYPES;
 
-    my $req = HTTP::Request->new(GET => $self->token_endpoint);
-    $req->header(Accept => $self->accept) if $self->accept;
-    my %query_params;
-
-    if ($grant_type =~ /^(R|C)/) {
-        my $credentials = $self->basic_credentials($self->client_id, $self->client_secret);
-        $req->header(Authorization => $credentials);
+    if ($grant_type ne 'Refresh Token'
+          and defined $self->expires
+          and $self->expires->epoch < DateTime->now->epoch) {
+        die "Failed to refresh-token" unless $self->_refresh_token();
     }
 
-    if ($grant_type =~ /^A/) {
-        # GRANT_TYPE, CODE, REDIRECT_URI, CLIENT_ID
+    my ($req, $res, $data, %query_params);
+    $req = HTTP::Request->new(POST => $self->token_endpoint);
+
+    my $credentials = $self->basic_credentials($self->client_id, $self->client_secret);
+    $req->header(Authorization => $credentials);
+
+    if ($grant_type eq 'Authorization Code') {
+        ## GRANT_TYPE, CODE, REDIRECT_URI, CLIENT_ID
+
+        die "Invalid Argument" unless $args{code} && $args{redirect_uri};
+
         %query_params = (
-            client_id    => $self->client_id,
-            code         => '', # NEED THIS
+            code         => $args{code},
             grant_type   => 'authorization_code',
-            redirect_uri => '', # AND THIS
+            redirect_uri => $args{redirect_uri},
         );
-    } elsif ($grant_type =~ /^I/) {
-    } elsif ($grant_type =~ /^ROOC$/) {
+    } elsif ($grant_type eq 'Implicit') {
+    } elsif ($grant_type eq 'Resource Owner Password Credentials') {
         # GRANT_TYPE, USERNAME, PASSWORD, scope
-        my $grant_type_option = $self->grant_type_option;
         %query_params = (
             grant_type => 'password',
-            username   => $grant_type_option->{username},
-            password   => $grant_type_option->{password},
+            username   => $args{username},
+            password   => $args{password},
         );
         $query_params{scope} = $args{scope} if $args{scope};
-    } elsif ($grant_type =~ /^C/) {
+    } elsif ($grant_type eq 'Client Credentials') {
         # GRANT_TYPE, scope
         $query_params{grant_type} = 'client_credentials';
         $query_params{scope} = $args{scope} if $args{scope};
-    } elsif ($grant_type =~ /^RT$/) {
+    } elsif ($grant_type eq 'Refresh Token') {
         # GRANT_TYPE, REFRESH_TOKEN, scope
 
-        die "refresh_token is required" unless $self->refresh_token;
+        die "refresh_token is required" unless $args{refresh_token};
 
         %query_params = (
             grant_type    => 'refresh_token',
-            refresh_token => $self->refresh_token,
+            refresh_token => $args{refresh_token},
         );
-        $query_params{scope} = $opt->{scope} if $opt->{scope};
+        $query_params{scope} = $args{scope} if $args{scope};
     } else {
         die "Invalid Grant-Type";
     }
 
     $req->uri->query_form(%query_params);
+    return $req;
+}
+
+sub token {
+    my ($self, $req) = @_;
+
+    my $grant_type = $req->uri->query_param('grant_type');
+
+    return if $grant_type ne 'client_credentials' && $grant_type ne 'password';
+
+    $req->header('Accept',       'application/json');
+    $req->header('Content-Type', 'application/x-www-form-urlencoded');
+
+    ## query_params in URI is also fine.
+    $req->content($req->uri->query);
+    $req->uri->query_form({});
+
     my $res = $self->ua->request($req);
-    my $data;
+    $self->parse_response($res);
+    return $self->access_token;
+}
 
-    my $content_type = $res->header('Content-Type');
-    if ($content_type ne 'application/json' && $content_type ne 'application/x-www-form-urlencoded') {
-        die "Not Supported Content-Type";
-    }
+sub parse_response {
+    my ($self, $res) = @_;
 
-    if ($content_type eq 'application/json') {
-        $data = decode_json($res->content);
-    } else {
-        my $content = $res->decoded_content;
-        my @params = split('&', $content);
-        for my $param (@params) {
-            my ($key, $value) = split /=/, $param;
-            $data->{$key} = $value;
-        }
-    }
+    die "Unsupported Content-Type" if $res->header('Content-Type') ne 'application/json';
+
+    my $data = decode_json($res->content);
 
     if ($res->is_success) {
-        $self->_access_token($data->{access_token});
-        $self->_token_type($data->{token_type});
+        ### TODO: validate successful response
+        ### http://tools.ietf.org/html/rfc6749#section-5.1
+        $self->access_token($data->{access_token});
+        $self->token_type($data->{token_type});
 
-        $self->_refresh_token($data->{refresh_token}) if $data->{refresh_token};
-        $self->_scope($data->{scope})                 if $data->{scope};
+        $self->refresh_token($data->{refresh_token}) if $data->{refresh_token};
+        $self->scope($data->{scope})                 if $data->{scope};
         if (my $expires_in = $data->{expires_in}) {
             my $epoch = DateTime->now->epoch;
             my $dt    = DateTime->from_epoch(epoch => $epoch + $expires_in);
-            $self->_expires_in($dt);
+            $self->expires($dt);
         }
     }
 
-    return ($res->is_success, $data);
+    return $data;
 }
 
-sub refresh_token { shift->token('RT') }
-sub authorize {}
+sub _refresh_token {
+    my ($self, $refresh_token) = @_;
+
+    my $req = $self->token_request(
+        grant_type    => 'Refresh Token',
+        refresh_token => $refresh_token || $self->refresh_token
+    );
+    my $res = $self->ua->request($req);
+    $self->parse_response($res);
+    return $res->is_success;
+}
 
 __PACKAGE__->meta->make_immutable;
 
 1;
+
+=pod
+
+=encoding utf-8
+
+=head1 NAME
+
+=haed1 SYNOPSIS
+
+    use OAuth2::Client;
+    my $client = OAuth2::Client->new(
+        client_id              => '5c4b5f41-f0f2-4fdd-aa7a-b161b4ee04d7',
+        client_secret          => 'q76UgVkXi1VE50Ettc1TY2kMpgoJmqzWmCmy',
+        authorization_endpoint => 'http://auth.silex.kr:5000/oauth/authorize',
+        token_endpoint         => 'http://auth.silex.kr:5000/oauth/token',
+    );
+
+    my $req;    # $req is an HTTP::Request object
+    $req = $client->authorization_request(
+        response_type => 'code',
+        redirect_uri  => 'http://restore.e-crf.co.kr:5001/',
+        state         => 'xyz'
+    );
+
+    $req = $client->token_request(
+        grant_type   => 'Authorization Code',
+        code         => 'aXW2c6bYz',
+        redirect_uri => 'http://restore.e-crf.co.kr:5001/'
+    );
+
+    $req = $client->token_request(
+        grant_type => 'Resource Owner Password Credentials',
+        username   => 'aanoaa',
+        password   => '123456'
+    );
+
+    $token = $client->token($req);    # cause, password grant_type
+
+=cut
