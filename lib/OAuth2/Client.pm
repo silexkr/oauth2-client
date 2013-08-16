@@ -1,4 +1,5 @@
 package OAuth2::Client;
+# ABSTRACT: OAuth2 client for SILEX
 
 use version; our $VERSION ||= version->declare('v0.0.0');
 
@@ -194,15 +195,8 @@ sub _refresh_token {
     return $res->is_success;
 }
 
-__PACKAGE__->meta->make_immutable;
-
 1;
-
-=pod
-
-=encoding utf-8
-
-=head1 NAME
+__END__
 
 =haed1 SYNOPSIS
 
@@ -235,4 +229,15 @@ __PACKAGE__->meta->make_immutable;
 
     $token = $client->token($req);    # cause, password grant_type
 
-=cut
+
+=head1 DESCRIPTION
+
+...
+
+
+=head1 SEE ALSO
+
+=for :list
+* https://github.com/silexkr/oauth2-client
+* https://github.com/silexkr/auth-silex-kr
+* https://github.com/silexkr/net-silex
