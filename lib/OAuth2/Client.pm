@@ -1,6 +1,8 @@
 package OAuth2::Client;
 
-use Moose;
+use Moo;
+use MooX::Types::MooseLike::Base qw( Int Str );
+use namespace::clean -except => 'meta';
 
 use HTTP::Cookies;
 use HTTP::Request;
@@ -11,9 +13,9 @@ use Time::Piece;
 use URI::QueryParam;
 use URI;
 
-has 'ua' => (
-    is  => 'ro',
-    isa => 'LWP::UserAgent',
+has ua => (
+    is      => 'ro',
+    isa     => sub { die "ua must be LWP::UserAgent" unless ref($_[0]) eq 'LWP::UserAgent' },
     default => sub {
         my $ua = LWP::UserAgent->new(
             agent        => 'OAuth2::Client',
@@ -56,18 +58,18 @@ our @RESPONSE_TYPES = qw/code token/;
 
 has [qw/client_id client_secret authorization_endpoint token_endpoint/] => (
     is  => 'ro',
-    isa => 'Str'
+    isa => Str,
 );
 
 has [qw/access_token token_type refresh_token scope/] => (
     is      => 'rw',
-    isa     => 'Str',
-    default => '',
+    isa     => Str,
+    default => q{},
 );
 
 has 'expires' => (
     is  => 'rw',
-    isa => 'Int',
+    isa => Int,
 );
 
 sub basic_credentials {
