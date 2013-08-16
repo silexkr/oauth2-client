@@ -56,21 +56,15 @@ our @GRANT_TYPES = (
 );
 our @RESPONSE_TYPES = qw/code token/;
 
-has [qw/client_id client_secret authorization_endpoint token_endpoint/] => (
-    is  => 'ro',
-    isa => Str,
-);
-
-has [qw/access_token token_type refresh_token scope/] => (
-    is      => 'rw',
-    isa     => Str,
-    default => q{},
-);
-
-has 'expires' => (
-    is  => 'rw',
-    isa => Int,
-);
+has client_id              => ( is => 'ro', isa => Str );
+has client_secret          => ( is => 'ro', isa => Str );
+has authorization_endpoint => ( is => 'ro', isa => Str );
+has token_endpoint         => ( is => 'ro', isa => Str );
+has access_token           => ( is => 'rw', isa => Str, default => q{} );
+has token_type             => ( is => 'rw', isa => Str, default => q{} );
+has refresh_token          => ( is => 'rw', isa => Str, default => q{} );
+has scope                  => ( is => 'rw', isa => Str, default => q{} );
+has expires                => ( is => 'rw', isa => Int );
 
 sub basic_credentials {
     my ($self, $username, $password) = @_;
