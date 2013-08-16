@@ -1,9 +1,10 @@
 package OAuth2::Client;
 
 use Moose;
-use Time::Piece;
+
 use HTTP::Request;
 use JSON::XS;
+use Time::Piece;
 use URI::QueryParam;
 use URI;
 
