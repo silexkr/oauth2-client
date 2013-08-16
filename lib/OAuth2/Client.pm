@@ -21,7 +21,7 @@ has ua => (
     isa     => sub { die "ua must be LWP::UserAgent" unless ref($_[0]) eq 'LWP::UserAgent' },
     default => sub {
         LWP::UserAgent->new(
-            agent        => 'OAuth2::Client',
+            agent        => "OAuth2-Client/$VERSION",
             cookie_jar   => HTTP::Cookies->new,
             max_redirect => 0,
         );
