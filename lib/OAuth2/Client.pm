@@ -1,5 +1,7 @@
 package OAuth2::Client;
 
+use version; our $VERSION ||= version->declare('v0.0.0');
+
 use Moo;
 use MooX::Types::MooseLike::Base qw( Int Str );
 use namespace::clean -except => 'meta';
