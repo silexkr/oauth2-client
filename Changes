@@ -1,2 +1,10 @@
-0.0001    Wed Aug  7 17:42:52 2013
-    - first release
+Release history for OAuth2::Client
+
+    - API refactoring to remove other auth method except password
+    - Reduce module dependency
+        - DateTime       -> Time::Piece
+	- Moose          -> Moo
+	- LWP::UserAgent -> HTTP::Tiny
+
+0.0001      2013-08-07 17:42:52 Asia/Seoul
+    first release
