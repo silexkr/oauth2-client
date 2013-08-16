@@ -1,7 +1,7 @@
 package OAuth2::Client;
 
 use Moose;
-use DateTime;
+use Time::Piece;
 use HTTP::Request;
 use JSON::XS;
 use URI::QueryParam;
@@ -31,7 +31,7 @@ has [qw/access_token token_type refresh_token scope/] => (
 
 has 'expires' => (
     is  => 'rw',
-    isa => 'DateTime'
+    isa => 'Int',
 );
 
 sub authorization_request {
@@ -66,13 +66,15 @@ sub token_request {
     my $grant_type = $args{grant_type};
 
     die "Unknown Grant-Type"
-      unless grep { $grant_type eq $_ } @GRANT_TYPES;
+        unless grep { $grant_type eq $_ } @GRANT_TYPES;
 
-    if ($grant_type ne 'Refresh Token'
-          and defined $self->expires
-          and $self->expires->epoch < DateTime->now->epoch) {
-        die "Failed to refresh-token" unless $self->_refresh_token();
-    }
+    die "Failed to refresh-token"
+        if (
+            $grant_type ne 'Refresh Token'
+            && defined $self->expires
+            && $self->expires < gmtime->epoch
+            && !$self->_refresh_token
+        );
 
     my ($req, $res, $data, %query_params);
     $req = HTTP::Request->new(POST => $self->token_endpoint);
@@ -150,16 +152,12 @@ sub parse_response {
     if ($res->is_success) {
         ### TODO: validate successful response
         ### http://tools.ietf.org/html/rfc6749#section-5.1
-        $self->access_token($data->{access_token});
-        $self->token_type($data->{token_type});
+        $self->access_token( $data->{access_token} );
+        $self->token_type( $data->{token_type} );
 
-        $self->refresh_token($data->{refresh_token}) if $data->{refresh_token};
-        $self->scope($data->{scope})                 if $data->{scope};
-        if (my $expires_in = $data->{expires_in}) {
-            my $epoch = DateTime->now->epoch;
-            my $dt    = DateTime->from_epoch(epoch => $epoch + $expires_in);
-            $self->expires($dt);
-        }
+        $self->refresh_token( $data->{refresh_token} )        if $data->{refresh_token};
+        $self->scope( $data->{scope} )                        if $data->{scope};
+        $self->expires( gmtime->epoch + $data->{expires_in} ) if $data->{expires_in};
     }
 
     return $data;
