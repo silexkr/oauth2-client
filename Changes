@@ -1,6 +1,9 @@
 Release history for OAuth2::Client
 
-v0.1.0    Sat Aug 17 03:27:06 2013 KST
+v0.1.1      2013-08-24 19:05:22 Asia/Seoul
+    - Use Type::Tiny rather than MooX::Types::MooseLike
+
+v0.1.0      2013-08-17 03:27:06 Asia/Seoul
     - API refactoring to remove other auth method except password
     - Reduce module dependency
         - DateTime       -> Time::Piece
