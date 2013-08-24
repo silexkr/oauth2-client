@@ -4,7 +4,7 @@ package OAuth2::Client::Password;
 use version; our $VERSION ||= version->declare('v0.0.0');
 
 use Moo;
-use MooX::Types::MooseLike::Base qw( Int Str );
+use Types::Standard qw( Int Str );
 use namespace::clean -except => 'meta';
 
 use HTTP::Tiny;
