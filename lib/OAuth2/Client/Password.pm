@@ -1,4 +1,5 @@
 package OAuth2::Client::Password;
+
 # ABSTRACT: OAuth2 client - password
 
 use version; our $VERSION ||= version->declare('v0.0.0');
@@ -13,35 +14,32 @@ use MIME::Base64 qw( encode_base64 );
 use Time::Piece;
 use Try::Tiny;
 
-has uri           => ( is => 'ro', isa => Str, required => 1 );
-has username      => ( is => 'ro', isa => Str, required => 1 );
-has password      => ( is => 'ro', isa => Str, required => 1 );
-has client_id     => ( is => 'ro', isa => Str, required => 1 );
-has client_secret => ( is => 'ro', isa => Str, required => 1 );
+has uri           => (is => 'ro', isa => Str, required => 1);
+has username      => (is => 'ro', isa => Str, required => 1);
+has password      => (is => 'ro', isa => Str, required => 1);
+has client_id     => (is => 'ro', isa => Str, required => 1);
+has client_secret => (is => 'ro', isa => Str, required => 1);
 
-has scope         => ( is => 'rw', isa => Str, clearer => 1 );
-has access_token  => ( is => 'rw', isa => Str, clearer => 1 );
-has refresh_token => ( is => 'rw', isa => Str, clearer => 1 );
-has token_type    => ( is => 'rw', isa => Str, clearer => 1 );
-has expires       => ( is => 'rw', isa => Int, clearer => 1 );
+has scope         => (is => 'rw', isa => Str, clearer => 1);
+has access_token  => (is => 'rw', isa => Str, clearer => 1);
+has refresh_token => (is => 'rw', isa => Str, clearer => 1);
+has token_type    => (is => 'rw', isa => Str, clearer => 1);
+has expires       => (is => 'rw', isa => Int, clearer => 1);
 
-has agent => (
-    is      => 'rw',
-    isa     => Str,
-    default => "OAuth2-Client-Password/$VERSION",
-);
+has agent =>
+  (is => 'rw', isa => Str, default => "OAuth2-Client-Password/$VERSION",);
 
-sub auth    { $_[0]->_get_access_token            }
+sub auth    { $_[0]->_get_access_token }
 sub refresh { $_[0]->_get_access_token('refresh') }
 
 sub _get_access_token {
-    my ( $self, $type ) = @_;
+    my ($self, $type) = @_;
 
     my %params;
     $params{scope} = $self->scope if defined $self->scope;
-    if ( !$type ) {
+    if (!$type) {
         $self->_clear, return
-            unless defined $self->username && defined $self->password;
+          unless defined $self->username && defined $self->password;
 
         %params = (
             grant_type => 'password',
@@ -49,7 +47,7 @@ sub _get_access_token {
             password   => $self->password,
         );
     }
-    elsif ( $type eq 'refresh' ) {
+    elsif ($type eq 'refresh') {
         $self->_clear, return unless defined $self->refresh_token;
 
         %params = (
@@ -64,37 +62,34 @@ sub _get_access_token {
             authorization => sprintf(
                 'Basic %s',
                 encode_base64(
-                    $self->client_id . ':' . $self->client_secret,
-                    q{},
+                    $self->client_id . ':' . $self->client_secret, q{},
                 ),
             ),
         },
     );
 
-    my $res = $http->post_form( $self->uri, \%params );
+    my $res = $http->post_form($self->uri, \%params);
 
     $self->_clear, return unless $res->{success};
-    $self->_clear, return unless $res->{headers}{'content-type'} eq 'application/json';
+    $self->_clear, return
+      unless $res->{headers}{'content-type'} eq 'application/json';
 
-    my $data = try { decode_json( $res->{content} ) };
+    my $data = try { decode_json($res->{content}) };
     $self->_clear, return unless $data;
 
     $self->_clear, return unless defined $data->{access_token};
-    $self->access_token( $data->{access_token} );
+    $self->access_token($data->{access_token});
 
     $self->_clear, return unless defined $data->{token_type};
-    $self->token_type( $data->{token_type} );
+    $self->token_type($data->{token_type});
 
-    $self->refresh_token( $data->{refresh_token} )        if defined $data->{refresh_token};
-    $self->expires( gmtime->epoch + $data->{expires_in} ) if defined $data->{expires_in};
+    $self->refresh_token($data->{refresh_token})
+      if defined $data->{refresh_token};
+    $self->expires(gmtime->epoch + $data->{expires_in})
+      if defined $data->{expires_in};
 
     # http://tools.ietf.org/html/rfc6749#section-3.3
-    if ( $data->{scope} ) {
-        $self->scope( $data->{scope} );
-    }
-    else {
-        $self->_clear, return unless $self->scope;
-    }
+    $self->scope($data->{scope} // '');
 
     return 1;
 }
