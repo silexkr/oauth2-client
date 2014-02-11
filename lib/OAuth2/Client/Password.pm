@@ -89,12 +89,7 @@ sub _get_access_token {
       if defined $data->{expires_in};
 
     # http://tools.ietf.org/html/rfc6749#section-3.3
-    if ($data->{scope}) {
-        $self->scope($data->{scope});
-    }
-    else {
-        $self->_clear, return unless $self->scope;
-    }
+    $self->scope($data->{scope} // '');
 
     return 1;
 }
