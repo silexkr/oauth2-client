@@ -25,7 +25,7 @@ ok $client, 'client object';
 
     {
         my $got      = $client->scope;
-        my $expected = 'auth.silex.kr:GET:user auth.silex.kr:POST:user auth.silex.kr:PUT:user auth.silex.kr:DELETE:user';
+        my $expected = '';
         is $got, $expected, 'access token - scope';
     }
 
@@ -50,7 +50,7 @@ ok $client, 'client object';
 
     {
         my $got      = $client->scope;
-        my $expected = 'auth.silex.kr:GET:user auth.silex.kr:POST:user auth.silex.kr:PUT:user auth.silex.kr:DELETE:user';
+        my $expected = '';
         is $got, $expected, 'refresh token - scope';
     }
 
