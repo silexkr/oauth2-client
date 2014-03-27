@@ -8,7 +8,7 @@ use Time::Piece;
 use OAuth2::Client::Password;
 
 my $client = OAuth2::Client::Password->new(
-    uri           => 'http://auth.silex.kr/oauth/token',
+    uri           => 'https://auth.silex.kr/oauth/token',
     username      => 'aanoaa',
     password      => '123456',
     client_id     => 'afc761ce-c153-40f5-9796-d2f0ddb41b5d',
