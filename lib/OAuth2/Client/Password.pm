@@ -1,8 +1,9 @@
 package OAuth2::Client::Password;
 
 # ABSTRACT: OAuth2 client - password
+# VERSION
 
-use version; our $VERSION ||= version->declare('v0.0.0');
+use OAuth2::Client;
 
 use Moo;
 use Types::Standard qw( Int Str );
@@ -26,8 +27,11 @@ has refresh_token => (is => 'rw', isa => Str, clearer => 1);
 has token_type    => (is => 'rw', isa => Str, clearer => 1);
 has expires       => (is => 'rw', isa => Int, clearer => 1);
 
-has agent =>
-  (is => 'rw', isa => Str, default => "OAuth2-Client-Password/$VERSION",);
+has agent => (
+    is      => 'rw',
+    isa     => Str,
+    default => "OAuth2-Client-Password/$OAuth2::Client::VERSION",
+);
 
 sub auth    { $_[0]->_get_access_token }
 sub refresh { $_[0]->_get_access_token('refresh') }
@@ -107,7 +111,7 @@ sub _clear {
 1;
 __END__
 
-=haed1 SYNOPSIS
+=head1 SYNOPSIS
 
     use OAuth2::Client::Password;
 
@@ -139,6 +143,34 @@ __END__
 =head1 DESCRIPTION
 
 ...
+
+
+=attr uri
+
+=attr username
+
+=attr password
+
+=attr client_id
+
+=attr client_secret
+
+=attr scope
+
+=attr access_token
+
+=attr refresh_token
+
+=attr token_type
+
+=attr expires
+
+=attr agent
+
+
+=method auth
+
+=method refresh
 
 
 =head1 SEE ALSO
