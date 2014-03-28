@@ -1,6 +1,8 @@
 Release history for {{$dist->name}}
 
 {{$NEXT}}
+
+v0.2.0    2014-03-28 14:46:24+09:00 Asia/Seoul
     - Dist::Zilla::PluginBundle::SILEX 플러그인 번들 사용
 
 v0.1.2      2014-02-11 15:30:53 Asia/Seoul
