@@ -1,0 +1,51 @@
+# NAME
+
+OAuth2::Client - OAuth2 client for SILEX
+
+# VERSION
+
+version v0.0.0
+
+# SYNOPSIS
+
+    ...
+
+# DESCRIPTION
+
+...
+
+# SEE ALSO
+
+- OAuth2::Client::Password
+- https://github.com/silexkr/oauth2-client
+- https://github.com/silexkr/auth-silex-kr
+- https://github.com/silexkr/net-silex
+
+# SUPPORT
+
+## Bugs / Feature Requests
+
+Please report any bugs or feature requests through the issue tracker
+at [https://github.com/silexkr/oauth2-client/issues](https://github.com/silexkr/oauth2-client/issues).
+You will be notified automatically of any progress on your issue.
+
+## Source Code
+
+This is open source software.  The code repository is available for
+public review and contribution under the terms of the license.
+
+[https://github.com/silexkr/oauth2-client](https://github.com/silexkr/oauth2-client)
+
+    git clone https://github.com/silexkr/oauth2-client.git
+
+# AUTHORS
+
+- 김도형 - Keedi Kim <keedi.kim@silex.kr>
+- 홍형석 - Hyungsuk Hong <hyungsuk.hong@silex.kr>
+
+# COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2014 by SILEX.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
