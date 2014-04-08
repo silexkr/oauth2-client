@@ -1,6 +1,7 @@
 Release history for {{$dist->name}}
 
 {{$NEXT}}
+    - Send notify to SILEX IRC when releasing
 
 v0.2.1    2014-04-08 15:18:27+09:00 Asia/Seoul
     - Apply Dist::Zilla 5.015 version for UploadToCPAN

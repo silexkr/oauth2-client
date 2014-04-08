@@ -29,6 +29,7 @@ on 'develop' => sub {
   requires "Dist::Zilla" => "5.015";
   requires "Dist::Zilla::Plugin::Prereqs" => "0";
   requires "Dist::Zilla::Plugin::RemovePrereqs" => "0";
+  requires "Dist::Zilla::Plugin::Run::AfterRelease" => "0";
   requires "Dist::Zilla::PluginBundle::SILEX" => "0";
   requires "File::Spec" => "0";
   requires "File::Temp" => "0";
