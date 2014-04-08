@@ -4,7 +4,7 @@ OAuth2::Client - OAuth2 client for SILEX
 
 # VERSION
 
-version v0.2.2
+version v0.2.3
 
 # SYNOPSIS
 
