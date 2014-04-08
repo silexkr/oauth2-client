@@ -26,7 +26,7 @@ on 'configure' => sub {
 };
 
 on 'develop' => sub {
-  requires "Dist::Zilla" => "5.014";
+  requires "Dist::Zilla" => "5.015";
   requires "Dist::Zilla::Plugin::Prereqs" => "0";
   requires "Dist::Zilla::Plugin::RemovePrereqs" => "0";
   requires "Dist::Zilla::PluginBundle::SILEX" => "0";
