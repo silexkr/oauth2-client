@@ -1,6 +1,7 @@
 Release history for {{$dist->name}}
 
 {{$NEXT}}
+    - Tune IRC notify message format
 
 v0.2.2    2014-04-08 17:43:08+09:00 Asia/Seoul
     - Send notify to SILEX IRC when releasing
