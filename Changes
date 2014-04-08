@@ -1,6 +1,7 @@
 Release history for {{$dist->name}}
 
 {{$NEXT}}
+    - Apply Dist::Zilla 5.015 version for UploadToCPAN
 
 v0.2.0    2014-03-28 14:46:24+09:00 Asia/Seoul
     - Dist::Zilla::PluginBundle::SILEX 플러그인 번들 사용
