@@ -11,14 +11,12 @@ requires "version" => "0";
 
 on 'test' => sub {
   requires "ExtUtils::MakeMaker" => "0";
-  requires "File::Spec::Functions" => "0";
-  requires "List::Util" => "0";
+  requires "File::Spec" => "0";
   requires "Test::More" => "0";
 };
 
 on 'test' => sub {
-  recommends "CPAN::Meta" => "0";
-  recommends "CPAN::Meta::Requirements" => "2.120900";
+  recommends "CPAN::Meta" => "2.120900";
 };
 
 on 'configure' => sub {
@@ -26,7 +24,7 @@ on 'configure' => sub {
 };
 
 on 'develop' => sub {
-  requires "Dist::Zilla" => "5.015";
+  requires "Dist::Zilla" => "5";
   requires "Dist::Zilla::Plugin::Prereqs" => "0";
   requires "Dist::Zilla::Plugin::RemovePrereqs" => "0";
   requires "Dist::Zilla::Plugin::Run::AfterRelease" => "0";
@@ -40,4 +38,5 @@ on 'develop' => sub {
   requires "Test::More" => "0";
   requires "Test::Pod" => "1.41";
   requires "Test::Pod::Coverage" => "1.08";
+  requires "Test::Spelling" => "0.12";
 };
