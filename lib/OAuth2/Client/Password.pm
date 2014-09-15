@@ -49,6 +49,7 @@ sub _get_access_token {
             grant_type => 'password',
             username   => $self->username,
             password   => $self->password,
+            scope      => $self->scope,
         );
     }
     elsif ( $type eq 'refresh' ) {
@@ -57,6 +58,7 @@ sub _get_access_token {
         %params = (
             grant_type    => 'refresh_token',
             refresh_token => $self->refresh_token,
+            scope         => $self->scope,
         );
     }
 
