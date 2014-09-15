@@ -1,6 +1,7 @@
 Release history for {{$dist->name}}
 
 {{$NEXT}}
+    - add `scope` param to get token
 
 v0.2.3    2014-04-08 18:18:32+09:00 Asia/Seoul
     - Tune IRC notify message format
